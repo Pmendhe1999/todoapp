@@ -1,0 +1,62 @@
+package com.demo.todo.app.todoapp.controller;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.demo.todo.app.todoapp.constants.MasterConstants;
+import com.demo.todo.app.todoapp.constants.MessageConstants;
+import com.demo.todo.app.todoapp.dto.RequestParamDto;
+import com.demo.todo.app.todoapp.dto.Response;
+import com.demo.todo.app.todoapp.dto.ResponseDto;
+import com.demo.todo.app.todoapp.dto.TaskAuditDto;
+import com.demo.todo.app.todoapp.entity.TaskAudit;
+import com.demo.todo.app.todoapp.entity.UserAudit;
+import com.demo.todo.app.todoapp.service.TaskAuditService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.validation.Valid;
+
+@RestController
+@RequestMapping(path = { MasterConstants.ROOT_API_PATH_TODO })
+public class TaskAuditController {
+
+	
+	@Autowired
+	private TaskAuditService taskAuditService;
+	
+	private static final Logger LOGGER = LoggerFactory.getLogger(TaskAuditController.class);
+
+	@GetMapping(path = "/taskAudit")
+	public ResponseEntity<Object> getAllTaskAudit(@Valid RequestParamDto paramDto , 
+			@Valid TaskAuditDto taskAuditDto){
+		LOGGER.info("Controller method to fetch all task audit");
+
+		try {
+
+			ObjectMapper objectMapper = new ObjectMapper();
+			
+			TaskAudit getTaskAudit = objectMapper.readValue(objectMapper.writeValueAsString(taskAuditDto), TaskAudit.class);
+			Page<TaskAudit> pageOfTaskAudit = taskAuditService.getAllTaskAudit(paramDto,getTaskAudit);
+			ResponseDto dto = new ResponseDto();
+			dto.setPageNo(pageOfTaskAudit.getPageable().getPageNumber());
+			dto.setPageSize(pageOfTaskAudit.getPageable().getPageSize());
+			dto.setTotalPages(pageOfTaskAudit.getTotalElements());
+			dto.setContent(pageOfTaskAudit.getContent());
+			Response response = new Response(HttpStatus.OK.value(), MessageConstants.SUCCESS_FETCH_LIST_TASK_AUDIT, "",
+					true, dto);
+			return new ResponseEntity<Object>(response, HttpStatus.OK);
+		} catch (Exception e) {
+			LOGGER.error("Error occured while fetching all task audit data in Controller ", e.getMessage());
+			Response response = new Response(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+					MessageConstants.ERROR_FETCH_LIST_TAS, e.getMessage(), false, "");
+			return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+}
